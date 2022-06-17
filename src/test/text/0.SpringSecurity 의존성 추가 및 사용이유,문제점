@@ -3,6 +3,8 @@
       접근이 가능해지는 일이 벌어진다.
 
       - 의존성 추가하기 implementation 'org.springframework.boot:spring-boot-starter-security'
+        compileOnly 'org.springframework.security:spring-security-web:4.2.2.RELEASE'
+        compileOnly 'org.springframework.security:spring-security-config:4.2.2.RELEASE'
 
         의존성을 추가후 스프링 부트를 스타트하면 로그인 페이지가 나오게 되고
         Using generated security password: 0c423cb0-2853-4239-8891-59c6ad6b8f63
