@@ -1,0 +1,33 @@
+*Form 인증
+    - Client -> GET /home -> SESSION ID (SERVER)
+      Client <- 인증이 안되면 로그인 페이지로 리다이렉트 <- SESSION ID (SERVER)
+      Client -> POST form data : username + password(SESSION 및 인증 토큰 생성/저장) -> SESSION ID (SERVER)
+      Client -> GET /home 세션에 저장된 인증 토큰으로 접근/인증유지 -> SESSION ID (SERVER)
+
+      요약
+        - GET 방식으로 클라이언트가 요청을 날렸을때에 서버에서는 인증된 사용자인지 파악후 인증실패시
+          로그인 페이지로 이동시킨다. 로그인페이지에서 로그인 인증시 Server 의 SpringSecurity 가 session 을 생성하게되고
+          최종 인증결과를 담은 토큰을 생성/저장 하게된다. (SecurityContext 객체가 생성이되고 SecurityContext 를 세션에 저장하는것이다.)
+          인증이 된 이후 다시 GET 방식으로 url 에 접근을 하게되면 SpringSecurity 가 현재 세션으로부터 인증 토큰이 존재하는지 파악하여
+          인증을 유지해준다.
+
+    - http.formLogin(): Form 로그인 인증 기능이 작동함
+        http.formLogin()
+            .loginPage("/login.html")               // 사용자 정의 로그인 페이지
+            .defaultSuccessUrl("/home")             // 로그인 성공 후 이동 페이지
+            .failureUrl("/login.html?error=true")   // 로그인 실패 후 이동 페이지
+            .usernameParameter("username")          // 아이디 파라미터명 설정 (로그인페이지에서 넘겨받을 파라미터명, username(key) = value(user))
+            .passwordParameter("password")          // 패스워드 파라미터명 설정 (로그인페이지에서 넘겨받을 파라미터명, password(key) = value(!@check1234))
+            .loginProcessingUrl("/login")           // 로그인 Form Action Url (로그인페이지에서 넘겨받을 url 명, get("login") 이라 생각하면된다.)
+            .successHandler(loginSuccessHandler())  // 로그인 성공 후 핸들러
+            .failureHandler(loginFailureHandler())  // 로그인 실패 후 핸들러
+
+            - successHandler(loginSuccessHandler()), failureHandler(loginFailureHandler())
+              인터페이스를 구현한 구현체를 설정하면되는데 간단하게 익명클래스를 이용하여 구현한다.
+
+            - SecurityConfig.java 인가정책 확인사항
+              우리는 http.formLogin().loginPage() 설정을 통해서 스프링시큐리티에서 기본 제공하는
+              로그인 페이지가 아닌 직접 만든 페이지를 사용할 수 있다. 그러나 인가정책에 의하면 어떠한 경우에도
+              인가를 받아야하기 때문에 로그인 페이지도 예외가 아니다. 로그인 페이지를 거쳐 인가를 받아야하기에
+              로그인 페이지는 누구나 접근이 가능해야한다. 그렇기에 .permitAll() 이라는 설정을 해주어야한다.
+
