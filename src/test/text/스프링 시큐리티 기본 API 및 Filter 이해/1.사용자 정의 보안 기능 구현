@@ -1,0 +1,84 @@
+* 사용자 정의 보안 기능 구현 (인증 api)
+    - SecurityConfig(사용자 정의 보안 설정 클래스) -> WebSecurityConfigurerAdapter (스프링 시큐리티의 웹 보안 기능 초기화 및 설정)
+      -> HttpSecurity(세부적인 보안 기능을 설정할 수 있는 API 제공)
+            -> 인증 API: http.formLogin(), .logout(), .csrf(), .httpBasic(), .sessionManagement(),
+                        .RememberMe(), .ExceptionHandling(), .addFilter()
+            -> 인가 API: http.authorizeRequests(), .antMatchers(/admin), .hasRole(USER), .permitAll(),
+                        .authenticated(), .fullyAuthentication(), .acess(hasRole(USER)), denyAll()
+
+      - 지난시간의 시작점, 문제점 살펴보기(0.)
+            - 시작: 의존성을 추가후 서버를 기동하게되면 스프링 시큐리티가 초기화 되며 웹 보안기능을 활성화 하고 우리의 시스템에 반영되어 작동된다.
+            - 문제점: 그런데 문제점으로는 보안기능은 작동하지만 사용자 계정이 1개뿐인 상황이고 권한도 현재 시스템에는 추가되거 변경되거나 하는 기능이 없다.
+                     그리고 해커의 침입에 대비할 수 있는 보안 옵션기능이 없다.
+
+      - WebSecurityConfigurerAdapter
+        스프링 시큐리티에 웹 보안기능을 초기화하고 설정을 하는 클래스이다.
+
+      - HttpSecurity
+        세부적인 보안 기능을 설정할 수 있는 API 를 제공
+
+      - WebSecurityConfigurerAdapter.java
+        HttpSecurity Class 를 생성하고 활용하여 11개정도의 API 들을 호출하여 설정 초기화 작업을 해준다.
+
+        protected final HttpSecurity getHttp() throws Exception {
+        		if (this.http != null) {
+        			return this.http;
+        		}
+        		AuthenticationEventPublisher eventPublisher = getAuthenticationEventPublisher();
+        		this.localConfigureAuthenticationBldr.authenticationEventPublisher(eventPublisher);
+        		AuthenticationManager authenticationManager = authenticationManager();
+        		this.authenticationBuilder.parentAuthenticationManager(authenticationManager);
+        		Map<Class<?>, Object> sharedObjects = createSharedObjects();
+        		this.http = new HttpSecurity(this.objectPostProcessor, this.authenticationBuilder, sharedObjects);
+        		if (!this.disableDefaults) {
+        			applyDefaultConfiguration(this.http);
+        			ClassLoader classLoader = this.context.getClassLoader();
+        			List<AbstractHttpConfigurer> defaultHttpConfigurers = SpringFactoriesLoader
+        					.loadFactories(AbstractHttpConfigurer.class, classLoader);
+        			for (AbstractHttpConfigurer configurer : defaultHttpConfigurers) {
+        				this.http.apply(configurer);
+        			}
+        		}
+        		configure(this.http); // 보안설정까지 입혀준다.
+        		return this.http;
+        	}
+
+        	- configure(this.http) 의 설정
+        	  사용자가 http 방식으로 요청을 할때에 인증요청을 받는다.
+        	  인증방식은 formLogin(), httpBasic() 을 제공받는다. 이러한 설정때문에 어느 경로로가든 formLogin() 방식으로
+        	  로그인 하도록 설정이 되어있는 것이다.
+
+        	  http.authorizeRequests((requests) -> requests.anyRequest().authenticated());
+              		http.formLogin();
+              		http.httpBasic();
+
+        private void applyDefaultConfiguration(HttpSecurity http) throws Exception {
+        		http.csrf();
+        		http.addFilter(new WebAsyncManagerIntegrationFilter());
+        		http.exceptionHandling(); // Exception 처리하는 API 까지 설정되어 있다.
+        		http.headers();
+        		http.sessionManagement();
+        		http.securityContext();
+        		http.requestCache();
+        		http.anonymous();
+        		http.servletApi();
+        		http.apply(new DefaultLoginPageConfigurer<>());
+        		http.logout();
+        	}
+
+
+
+    - 설정파일 만들기 (SecurityConfig.java)
+        - @Configuration: 설정파일임을 알려준다.
+        - @EnableWebSecurity: WebSecurityConfiguration.class 등 여러 클래스들을 임포트하여 실행시키는 역할을 한다.
+
+        - 1.SecurityConfig 클래스를 만들어 WebSecurityConfigurerAdapter 를 상속받는다.
+          2.인증 API 와 인가 API 에 대해서 추가적으로 설정할 수 있는 메소드를 만들어준다.
+          3.서버 기동시 랜덤한 문자열로 제공되는 PassWord 를 매번 갖다 붙이기는 힘드니
+            환경설정 파일에 직접 작성하여 우리가 지정한 계정으로 인증할 수 있도록 처리하자.
+          4.application.properties 파일에 다음과 같이 추가한다.
+            spring.security.user.name=user
+            spring.security.user.password=1111
+          5.서버를 시작하면 위의 설정한 값대로 로그인 할 수있다.
+
+
