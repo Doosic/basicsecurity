@@ -1,0 +1,32 @@
+* Logout 처리, LogoutFilter
+        - 알아야 할 것 : 기본적으로 스프링 시큐리티가 로그아웃 요청을 처리하는 것은 POST 방식으로 해야한다.
+
+        - 간단하게 살펴보는 로그아웃 처리 과정
+            - 1. 클라이언트가 로그아웃 요청을 날린다. request(/logout)
+              2. SpringSecurity 가 요청을 받아서 처리한다
+                 세션 무효화, 인증토큰 삭제, 쿠키정보 삭제, 로그인 페이지로 리다이렉트
+
+
+        - http.logout() : 로그아웃 기능이 작동한다.
+            protected void configure(HttpSecurity http) throws Exception {
+                http.logout()                                       // 로그아웃 처리
+                    .logoutUrl("/logout")                           // 로그아웃 처리 URL
+                    .logoutSuccessUrl("/login")                     // 로그아웃 성공 후 이동페이지
+                    .deleteCookies("JSESSIONID", "remember-me")     // 로그아웃 후 쿠키 삭제 (발급된 쿠키가 있다면 삭제 할 수 있다)
+                    .addLogoutHandler(logoutHandler())              // 로그아웃 핸들러
+                    .logoutSuccessHandler(logoutSuccessHandler())   // 로그아웃 성공 후 핸들러
+            }
+
+
+        - Logout 의 흐름
+            - 1.Request 를 POST 방식으로 던진다.
+              2.LogoutFilter 에서 AntPathRequestMatcher(/logout) 에게 넘겨주고
+              3.AntPathRequestMatcher(/logout) 요청이 맞게 왔는지 확인후 일치하지 않는다면
+              4.chain.doFilter 로 이동하고 일치한다면 Authentication 으로 이동한다.
+              5.Authentication 에서는 인증된 사용자의 인증객체를 담고있는 SecurityContext 에게 인증꺼내와
+              6.SecurityContextLogoutHandler 에게 전달해준다.
+              7.SecurityContextLogoutHandler 는 세션 무효화, 쿠키 삭제, SecurityContextHolder.clearContext()
+                라는 일을하며 SecurityContextHolder.clearContext() 는 SecurityContext 객체를 삭제한다.
+                그리고 Authentication 인증객체도 Null 로 초기화 한다.
+              8.마지막으로 성공적으로 로그아웃 처리가 된다면 LogoutFilter 는 SimpleUrlLogoutSuccessHandler 를 호출하여
+                Redirect:/login 로그인 페이지로 이동시켜 줍니다.
