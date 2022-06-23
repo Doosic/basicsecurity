@@ -77,6 +77,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         response.sendRedirect("/login");
                     }
                 })
-                .deleteCookies("remember-me");
+                .deleteCookies("remember-me")
+        .and()
+                .rememberMe()
+                .rememberMeParameter("remember")
+                .tokenValiditySeconds(3600)
+                .userDetailsService(userDetailsService);
     }
 }
