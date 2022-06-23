@@ -1,0 +1,32 @@
+* Remember Me 인증
+    - 1. 세션이 만료되고 웹 브라우저가 종료된 후에도 어플리케이션이 사용자를 기억하는 기능
+      2. Remember-Me 쿠키에 대한 Http 요청을 확인한 후 토큰 기반 인증을 사용해 유효성을 검사하고
+         토큰이 검증되면 사용자는 로그인 된다.
+      3. 사용자 라이프사이클
+            - 인증 성공(Remember-Me 쿠키 설정)
+            - 인증 실패(쿠키가 존재하면 쿠키 무효화)
+            - 로그 아웃(쿠키가 존재하면 쿠키 무효화)
+
+    - 로그인 이후 간단한 흐름
+        - 그냥 로그인시 id, pwd 를 가지고 인증이되어 서버에 사용자의 세션이 생성되고
+          그 안에는 인증객체를 가지고 있는 상태. 서버같은 경우에는 인증에 성공한 사용자에게
+          세션을 생성할때 가지고 있는 JSESSIONID 를 응답 헤더에 보내준다. 클라이언트는 Cookie 에
+          해당 JSESSIONID 를 가지고 있고 이 상태에서 다시 클라이언트가 서버에 접속하게 되면
+          별다른 인증없이 다시 들어올 수 있다.
+
+        - 위와 나머지는 다 동일하나 로그인 페이지에 있는 rememberMe 체크박스를 클릭하여 기능 사용시
+          Cookie 로 rememberMe 라는 이름을 가진 쿠키를 추가해준다.
+
+          클라이언트가 서버에 접근할때에 발급해준 Cookie 가 삭제되거나 만료되지 않았다면 접근할때마다
+          클라이언트의 Request Header 에 remember-me 값을 가지고 있는지 파싱후 암호화된 Cookie 값을
+          디코드 후 인증을 해준다.
+
+
+    http.rememberMe(): rememberMe 기능이 작동함
+        protected void configure(HttpSecurity http)throw Exception{
+            http.rememberMe()
+                .rememberMeParameter("remember")        // 기본 파라미터명은 remember-me
+                .token ValiditySeconds(3600)            // default 는 14 일(초단위 설정)
+                .alwaysRemember(false)                  // 리멤버 미 기능이 활성화되지 않아도 항상 실행(true 일때만)
+                .userDetailsService(userDetailsService) // 시스템 상의 사용자 정보 조회를 위한 비즈니스 로직추가
+        }
